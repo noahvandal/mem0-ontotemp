@@ -222,6 +222,7 @@ class BitemporalStore:
                     min_size=1,
                     max_size=self.config.pool_size,
                     timeout=self.config.pool_timeout,
+                    open=True,
                 )
             except ImportError:
                 raise ImportError(

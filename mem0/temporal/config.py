@@ -4,11 +4,13 @@ Configuration for the Temporal Memory system.
 
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TemporalStoreConfig(BaseModel):
     """Configuration for the bitemporal Postgres store."""
+
+    model_config = ConfigDict(extra="forbid")
 
     connection_string: str = Field(
         ...,
@@ -27,12 +29,11 @@ class TemporalStoreConfig(BaseModel):
         description="Connection pool timeout in seconds",
     )
 
-    class Config:
-        extra = "forbid"
-
 
 class OntologyConfig(BaseModel):
     """Configuration for the ontology auto-generation system."""
+
+    model_config = ConfigDict(extra="forbid")
 
     auto_generate: bool = Field(
         default=True,
@@ -53,12 +54,11 @@ class OntologyConfig(BaseModel):
         description="Minimum instances before a type is considered stable",
     )
 
-    class Config:
-        extra = "forbid"
-
 
 class ReasoningConfig(BaseModel):
     """Configuration for reasoning trace tracking."""
+
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = Field(
         default=True,
@@ -72,9 +72,6 @@ class ReasoningConfig(BaseModel):
         default=100,
         description="Maximum reasoning steps to store per trace",
     )
-
-    class Config:
-        extra = "forbid"
 
 
 class TemporalMemoryConfig(BaseModel):
@@ -124,8 +121,7 @@ class TemporalMemoryConfig(BaseModel):
         description="Whether to create context snapshots on search operations (for full audit trail)",
     )
 
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     @classmethod
     def from_connection_string(

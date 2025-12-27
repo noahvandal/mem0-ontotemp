@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Set
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MemoryVersion(BaseModel):
@@ -20,6 +20,8 @@ class MemoryVersion(BaseModel):
     Memories are never mutated - updates create new versions and supersede old ones.
     This enables point-in-time queries: "What did we believe at time T?"
     """
+
+    model_config = ConfigDict(frozen=True)
 
     # Identity
     version_id: UUID = Field(default_factory=uuid4, description="Unique ID for this version")
@@ -51,9 +53,6 @@ class MemoryVersion(BaseModel):
     # Additional metadata
     metadata: Optional[Dict[str, Any]] = Field(default=None)
 
-    class Config:
-        frozen = True  # Immutable
-
 
 class RelationshipVersion(BaseModel):
     """
@@ -61,6 +60,8 @@ class RelationshipVersion(BaseModel):
 
     Like memories, relationships are versioned and never mutated.
     """
+
+    model_config = ConfigDict(frozen=True)
 
     # Identity
     version_id: UUID = Field(default_factory=uuid4, description="Unique ID for this version")
@@ -85,9 +86,6 @@ class RelationshipVersion(BaseModel):
     # Provenance
     previous_version_id: Optional[UUID] = Field(default=None)
     reasoning_trace_id: Optional[UUID] = Field(default=None)
-
-    class Config:
-        frozen = True
 
 
 class TemporalGraph(BaseModel):

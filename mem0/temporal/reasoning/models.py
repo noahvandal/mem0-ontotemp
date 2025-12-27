@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StepType(str, Enum):
@@ -29,6 +29,8 @@ class StepType(str, Enum):
 
 class ReasoningStep(BaseModel):
     """A single step in a reasoning trace."""
+
+    model_config = ConfigDict(use_enum_values=True)
 
     step_id: UUID = Field(default_factory=uuid4)
     step_type: StepType = Field(..., description="Type of reasoning step")
@@ -48,9 +50,6 @@ class ReasoningStep(BaseModel):
         description="Confidence in this step",
     )
     timestamp: datetime = Field(default_factory=datetime.now)
-
-    class Config:
-        use_enum_values = True
 
 
 class ReasoningTrace(BaseModel):
@@ -106,8 +105,7 @@ class ReasoningTrace(BaseModel):
     outcome: Optional[str] = Field(default=None, description="Observed outcome")
     outcome_success: Optional[bool] = Field(default=None, description="Was the outcome successful?")
 
-    class Config:
-        frozen = False  # Allow updating outcome later
+    model_config = ConfigDict(frozen=False)  # Allow updating outcome later
 
     @property
     def duration_seconds(self) -> Optional[float]:

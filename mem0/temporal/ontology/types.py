@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TypeDerivation(str, Enum):
@@ -91,8 +91,7 @@ class EntityTypeVersion(BaseModel):
     # Hierarchy
     parent_type_id: Optional[UUID] = Field(default=None, description="Parent type if this is a subtype")
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
     @property
     def is_stable(self) -> bool:
@@ -139,8 +138,7 @@ class RelationTypeVersion(BaseModel):
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     derivation: TypeDerivation = Field(default=TypeDerivation.LLM_EXTRACTED)
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class OntologyGraph(BaseModel):

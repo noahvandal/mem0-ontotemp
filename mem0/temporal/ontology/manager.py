@@ -190,7 +190,7 @@ class EmergentOntologyManager:
                     "type_id": type_id,
                     "name": et.name,
                     "description": et.description,
-                    "attributes": {k: v.dict() for k, v in et.observed_attributes.items()},
+                    "attributes": {k: v.model_dump() for k, v in et.observed_attributes.items()},
                     "instance_count": et.instance_count,
                     "confidence": et.confidence,
                     "similarity": similarity,
@@ -211,9 +211,7 @@ class EmergentOntologyManager:
         prompt = build_type_resolution_prompt(entity_name, attributes, context, similar_types)
 
         try:
-            response = self.llm.generate_response(
-                messages=[{"role": "user", "content": prompt}]
-            )
+            response = self.llm.generate(prompt)
             return parse_type_resolution_response(response)
         except Exception as e:
             logger.warning(f"LLM type resolution failed: {e}")
@@ -253,9 +251,7 @@ class EmergentOntologyManager:
                 desc_prompt = build_type_description_prompt(
                     name, attributes, {k: [v] for k, v in attributes.items()}
                 )
-                description = self.llm.generate_response(
-                    messages=[{"role": "user", "content": desc_prompt}]
-                )
+                description = self.llm.generate(desc_prompt)
             except Exception as e:
                 logger.warning(f"Failed to generate type description: {e}")
 
