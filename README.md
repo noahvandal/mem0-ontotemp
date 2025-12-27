@@ -49,7 +49,8 @@
 
 > **🎉 mem0ai v1.0.0 is now available!** This major release includes API modernization, improved vector store support, and enhanced GCP integration. [See migration guide →](MIGRATION_GUIDE_v1.0.md)
 
-##  🔥 Research Highlights
+## 🔥 Research Highlights
+
 - **+26% Accuracy** over OpenAI Memory on the LOCOMO benchmark
 - **91% Faster Responses** than full-context, ensuring low-latency at scale
 - **90% Lower Token Usage** than full-context, cutting costs without compromise
@@ -57,21 +58,23 @@
 
 # Introduction
 
-[Mem0](https://mem0.ai) ("mem-zero") enhances AI assistants and agents with an intelligent memory layer, enabling personalized AI interactions. It remembers user preferences, adapts to individual needs, and continuously learns over time—ideal for customer support chatbots, AI assistants, and autonomous systems.
+[Mem0-OntoTemp](https://mem0.ai) ("mem-zero-ontotemp") enhances AI assistants and agents with an intelligent memory layer, enabling personalized AI interactions. It remembers user preferences, adapts to individual needs, and continuously learns over time—ideal for customer support chatbots, AI assistants, and autonomous systems. haha
 
 ### Key Features & Use Cases
 
 **Core Capabilities:**
+
 - **Multi-Level Memory**: Seamlessly retains User, Session, and Agent state with adaptive personalization
 - **Developer-Friendly**: Intuitive API, cross-platform SDKs, and a fully managed service option
 
 **Applications:**
+
 - **AI Assistants**: Consistent, context-rich conversations
 - **Customer Support**: Recall past tickets and user history for tailored help
 - **Healthcare**: Track patient preferences and history for personalized care
 - **Productivity & Gaming**: Adaptive workflows and environments based on user behavior
 
-## 🚀 Quickstart Guide <a name="quickstart"></a>
+## 🚀 Quickstart Guide `<a name="quickstart"></a>`
 
 Choose between our hosted platform or self-hosted package:
 
@@ -91,6 +94,7 @@ pip install mem0ai
 ```
 
 Install sdk via npm:
+
 ```bash
 npm install mem0ai
 ```
