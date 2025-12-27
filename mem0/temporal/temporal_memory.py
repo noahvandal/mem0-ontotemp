@@ -356,8 +356,8 @@ class TemporalMemory:
         if trace.completed_at:
             graph = self.graph_as_of(trace.completed_at)
             knowledge_state = {
-                "memories": {str(k): v.dict() for k, v in graph.memories.items()},
-                "relationships": [r.dict() for r in graph.relationships],
+                "memories": {str(k): v.model_dump() for k, v in graph.memories.items()},
+                "relationships": [r.model_dump() for r in graph.relationships],
             }
 
         return self.tracer.explain_decision(

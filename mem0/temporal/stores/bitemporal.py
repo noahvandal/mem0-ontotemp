@@ -85,8 +85,11 @@ CREATE TABLE IF NOT EXISTS memory_versions (
     context_snapshot JSONB,
 
     user_id TEXT,
+    organization_id TEXT,
+    session_id TEXT,
     agent_id TEXT,
     run_id TEXT,
+    scope_level TEXT DEFAULT 'user',
     metadata JSONB
 );
 
@@ -159,7 +162,7 @@ CREATE TABLE IF NOT EXISTS reasoning_traces (
     timestamp TIMESTAMPTZ DEFAULT now()
 );
 
--- Indexes for efficient queries
+-- Indexes for efficient queries (base indexes only - new column indexes added via migration)
 CREATE INDEX IF NOT EXISTS idx_memory_id ON memory_versions (memory_id);
 CREATE INDEX IF NOT EXISTS idx_memory_current ON memory_versions (memory_id) WHERE superseded_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_memory_bitemporal ON memory_versions (memory_id, transaction_time DESC, superseded_at);
@@ -239,7 +242,7 @@ class BitemporalStore:
             yield conn
 
     def initialize(self) -> None:
-        """Create tables and indexes if they don't exist."""
+        """Create tables and indexes if they don't exist, and migrate schema if needed."""
         if self._initialized:
             return
 
@@ -250,14 +253,72 @@ class BitemporalStore:
                 cur.execute(sql)
             conn.commit()
 
+            # Migrate schema: add columns that may be missing from older table versions
+            self._migrate_schema(conn)
+
         self._initialized = True
         logger.info("Bitemporal store initialized")
+
+    def _migrate_schema(self, conn) -> None:
+        """Add missing columns to existing tables (schema migration)."""
+        # Define columns that may need to be added to memory_versions
+        memory_columns = [
+            ("organization_id", "TEXT"),
+            ("session_id", "TEXT"),
+            ("scope_level", "TEXT DEFAULT 'user'"),
+        ]
+
+        with conn.cursor() as cur:
+            for col_name, col_type in memory_columns:
+                try:
+                    cur.execute(f"""
+                        ALTER TABLE memory_versions
+                        ADD COLUMN IF NOT EXISTS {col_name} {col_type}
+                    """)
+                except Exception as e:
+                    # Column might already exist or other error - log and continue
+                    logger.debug(f"Migration for {col_name}: {e}")
+
+            # Add indexes for new columns if they don't exist
+            index_statements = [
+                "CREATE INDEX IF NOT EXISTS idx_memory_org ON memory_versions (organization_id) WHERE superseded_at IS NULL",
+                "CREATE INDEX IF NOT EXISTS idx_memory_session ON memory_versions (session_id) WHERE superseded_at IS NULL",
+                "CREATE INDEX IF NOT EXISTS idx_memory_scope ON memory_versions (scope_level) WHERE superseded_at IS NULL",
+            ]
+            for idx_sql in index_statements:
+                try:
+                    cur.execute(idx_sql)
+                except Exception as e:
+                    logger.debug(f"Index creation: {e}")
+
+            conn.commit()
+
+        logger.debug("Schema migration check completed")
 
     def close(self) -> None:
         """Close the connection pool."""
         if self._pool is not None:
             self._pool.close()
             self._pool = None
+
+    def reset(self) -> None:
+        """Drop all tables and reinitialize. WARNING: This deletes all data!"""
+        drop_sql = """
+            DROP TABLE IF EXISTS reasoning_traces CASCADE;
+            DROP TABLE IF EXISTS relationship_versions CASCADE;
+            DROP TABLE IF EXISTS memory_versions CASCADE;
+            DROP TABLE IF EXISTS entity_type_versions CASCADE;
+            DROP TABLE IF EXISTS relation_type_versions CASCADE;
+        """
+
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(drop_sql)
+            conn.commit()
+
+        self._initialized = False
+        self.initialize()
+        logger.info("Bitemporal store reset - all data cleared")
 
     # =========================================================================
     # Memory Version Operations
@@ -274,8 +335,11 @@ class BitemporalStore:
         reasoning_trace_id: Optional[UUID] = None,
         context_snapshot: Optional[Dict[str, Any]] = None,
         user_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        session_id: Optional[str] = None,
         agent_id: Optional[str] = None,
         run_id: Optional[str] = None,
+        scope_level: str = "user",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> MemoryVersion:
         """
@@ -290,7 +354,12 @@ class BitemporalStore:
             previous_version_id: Version this supersedes (if update)
             reasoning_trace_id: Link to reasoning that created this
             context_snapshot: Context available when created
-            user_id, agent_id, run_id: mem0 identifiers
+            user_id: User-level scope identifier
+            organization_id: Organization-level scope identifier
+            session_id: Session-level scope identifier
+            agent_id: Agent identifier
+            run_id: Run/conversation identifier
+            scope_level: Memory scope - 'user', 'organization', 'session', or 'global'
 
         Returns:
             The created MemoryVersion
@@ -311,8 +380,11 @@ class BitemporalStore:
             reasoning_trace_id=reasoning_trace_id,
             context_snapshot=context_snapshot,
             user_id=user_id,
+            organization_id=organization_id,
+            session_id=session_id,
             agent_id=agent_id,
             run_id=run_id,
+            scope_level=scope_level,
             metadata=metadata,
         )
 
@@ -321,12 +393,12 @@ class BitemporalStore:
                 version_id, memory_id, content, embedding,
                 valid_from, valid_to, transaction_time, superseded_at,
                 entity_type_id, previous_version_id, reasoning_trace_id, context_snapshot,
-                user_id, agent_id, run_id, metadata
+                user_id, organization_id, session_id, agent_id, run_id, scope_level, metadata
             ) VALUES (
                 %s, %s, %s, %s,
                 %s, %s, %s, %s,
                 %s, %s, %s, %s,
-                %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s
             )
         """
 
@@ -346,8 +418,11 @@ class BitemporalStore:
                     str(version.reasoning_trace_id) if version.reasoning_trace_id else None,
                     json.dumps(version.context_snapshot) if version.context_snapshot else None,
                     version.user_id,
+                    version.organization_id,
+                    version.session_id,
                     version.agent_id,
                     version.run_id,
+                    version.scope_level,
                     json.dumps(version.metadata) if version.metadata else None,
                 ))
             conn.commit()
@@ -842,8 +917,11 @@ class BitemporalStore:
             reasoning_trace_id=_to_uuid(data.get("reasoning_trace_id")),
             context_snapshot=data.get("context_snapshot"),
             user_id=data.get("user_id"),
+            organization_id=data.get("organization_id"),
+            session_id=data.get("session_id"),
             agent_id=data.get("agent_id"),
             run_id=data.get("run_id"),
+            scope_level=data.get("scope_level", "user"),
             metadata=data.get("metadata"),
         )
 

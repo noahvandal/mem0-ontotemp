@@ -367,7 +367,7 @@ class ReasoningTracer:
                 cur.execute(sql, (
                     str(trace.trace_id),
                     str(trace.snapshot_id) if trace.snapshot_id else None,
-                    json.dumps([s.dict() for s in trace.steps], default=str),
+                    json.dumps([s.model_dump() for s in trace.steps], default=str),
                     trace.goal,
                     trace.conclusion,
                     json.dumps(trace.retrieved_context),

@@ -45,10 +45,18 @@ class MemoryVersion(BaseModel):
     reasoning_trace_id: Optional[UUID] = Field(default=None, description="Link to reasoning that created/modified this")
     context_snapshot: Optional[Dict[str, Any]] = Field(default=None, description="Context available when created")
 
-    # mem0 metadata
-    user_id: Optional[str] = Field(default=None)
-    agent_id: Optional[str] = Field(default=None)
-    run_id: Optional[str] = Field(default=None)
+    # Identity scopes (for multi-tenant and session tracking)
+    user_id: Optional[str] = Field(default=None, description="User-level scope")
+    organization_id: Optional[str] = Field(default=None, description="Organization-level scope")
+    session_id: Optional[str] = Field(default=None, description="Session-level scope")
+    agent_id: Optional[str] = Field(default=None, description="Agent identifier")
+    run_id: Optional[str] = Field(default=None, description="Run/conversation identifier")
+
+    # Scope level for this memory
+    scope_level: Optional[str] = Field(
+        default="user",
+        description="Memory scope: 'user', 'organization', 'session', or 'global'"
+    )
 
     # Additional metadata
     metadata: Optional[Dict[str, Any]] = Field(default=None)

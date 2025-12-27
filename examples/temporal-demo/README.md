@@ -40,6 +40,7 @@ python 02_graph_reconstruction.py
 python 03_reasoning_traces.py
 python 04_auto_ontology.py
 python 05_full_agent_session.py
+python 06_interactive_session.py
 ```
 
 ## Demo Descriptions
@@ -91,6 +92,21 @@ Simulates a full AI agent session:
 - Updates knowledge as new info arrives
 - Demonstrates time-travel queries
 - Shows explainability for past decisions
+
+### 06_interactive_session.py
+**Interactive chat with temporal memory explorer**
+
+A fully interactive chat session with menu access:
+- Chat naturally with an AI that remembers everything
+- Access `/menu` command to explore temporal memory:
+  - View ontology (auto-generated entity types)
+  - Browse all memories with version history
+  - View memory details, relationships, and temporal changes
+  - Time-travel to any point in time
+  - Compare states between two timestamps
+  - Search memories semantically
+- Exit menu with `0` to return to chat
+- Use `/quit` to exit
 
 ## Key Concepts
 
